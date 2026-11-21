@@ -167,7 +167,7 @@ function crescent(x,y,z,s){var rod=new THREE.Mesh(new THREE.CylinderGeometry(0.0
 
 /* ---------- ground: Mapbox satellite imagery over Mapbox terrain ---------- */
 var BUILT_IN_TOKEN='pk.eyJ1IjoicmFtZWV6LXByZXNpZ2h0MiIsImEiOiJjbXdvemgydzMwZXRrMnhyM3ExcTFkNWloIn0.ue_krImGU76orq754IuJbA';                      // paste a pk. token here to skip the form
-var MASJID_LL=[74.9707709,13.0596235];      // lng, lat of the masjid roof centre
+var MASJID_LL=[74.9704574,13.0520272];      // lng, lat of the masjid roof centre
 var ALIGN0={x:0,z:0,r:0};                   // baked-in map correction (metres, metres, degrees)
 var gr=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),std(rep(T.scrub,290),{rough:1}));gr.rotation.x=-Math.PI/2;gr.position.y=-0.05;gr.receiveShadow=true;scene.add(gr);
 var SEG=[],TREES=[];function seg(a,b,f){SEG.push([a[0],a[1],b[0],b[1],f||0]);}function ring(p){for(var i=0;i<p.length;i++)seg(p[i],p[(i+1)%p.length]);}
@@ -177,7 +177,7 @@ poly(COMP,0.01,std(rep(T.soil,1/5),{rough:1,color:0xe6c8b0}));poly([[-19,1.2],[8
 box(4.6,0.06,6.2,M.pave,0,0.03,8.4,1.6);
 // the map lives in a group whose local axes are east (+x) and south (+z), with the masjid roof centre at its origin
 var TG=new THREE.Group();scene.add(TG);
-var AL={x:ALIGN0.x,z:ALIGN0.z,r:ALIGN0.r};try{var _a=JSON.parse(localStorage.getItem('handelu_align')||'null');if(_a&&isFinite(_a.x)&&isFinite(_a.z)&&isFinite(_a.r))AL=_a;}catch(e){}
+var AL={x:ALIGN0.x,z:ALIGN0.z,r:ALIGN0.r};try{var _a=JSON.parse(localStorage.getItem('handelu_align2')||'null');if(_a&&isFinite(_a.x)&&isFinite(_a.z)&&isFinite(_a.r))AL=_a;}catch(e){}
 function applyAlign(){TG.rotation.y=-1.2387+AL.r*Math.PI/180;TG.position.set(AL.x,0,-9.5+AL.z);TG.updateMatrixWorld(true);}
 applyAlign();
 var DEM=null,H0=0;
@@ -489,7 +489,7 @@ document.getElementById('bTok').addEventListener('click',function(){askToken('')
   [].forEach.call(document.querySelectorAll('#align button[data-n]'),function(b){b.addEventListener('click',function(){var n=b.getAttribute('data-n'),s=Math.sin(cur.th),c=Math.cos(cur.th);
     if(n==='u'){AL.x-=s;AL.z-=c;}else if(n==='d'){AL.x+=s;AL.z+=c;}else if(n==='r'){AL.x+=c;AL.z-=s;}else if(n==='l'){AL.x-=c;AL.z+=s;}else if(n==='cw')AL.r-=0.5;else AL.r+=0.5;applyAlign();show();});});
   document.getElementById('aZero').addEventListener('click',function(){AL={x:ALIGN0.x,z:ALIGN0.z,r:ALIGN0.r};applyAlign();show();});
-  document.getElementById('aDone').addEventListener('click',function(){on=false;document.body.classList.remove('align');ghost(false);try{localStorage.setItem('handelu_align',JSON.stringify(AL));}catch(e){}MAP.setHeights();placeAll();setView('front');});})();
+  document.getElementById('aDone').addEventListener('click',function(){on=false;document.body.classList.remove('align');ghost(false);try{localStorage.setItem('handelu_align2',JSON.stringify(AL));}catch(e){}MAP.setHeights();placeAll();setView('front');});})();
 window.__v.MAP=MAP;msg.style.display='none';requestAnimationFrame(tick);
 (function(){var tk=BUILT_IN_TOKEN;if(!tk){try{tk=localStorage.getItem('handelu_mapbox_token')||'';}catch(e){}}if(/^pk\./.test(tk))MAP.start(tk);else askToken('');})();
 })();
