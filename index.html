@@ -66,7 +66,6 @@
   <button data-n="ccw">&#8634;</button><button id="aZero">Reset</button><button id="aDone">Done</button></div>
   <div id="aVal"></div>
 </div>
-<div id="attr2" style="position:fixed;right:6px;bottom:14px;z-index:4;font-size:10px;color:#fff;text-shadow:0 1px 2px #000;opacity:.9">Car model: Eric Chadwick, Darmstadt Graphics Group, CC BY 4.0</div>
 <div id="attr">&copy; <a href="https://www.mapbox.com/about/maps/" target="_blank" rel="noopener">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; Maxar</div>
 <div id="tok"><div class="card">
   <h2>Handelu Drive</h2>
@@ -92,7 +91,6 @@ document.addEventListener('dblclick',function(e){e.preventDefault();},{passive:f
 (function(){var last=0;document.addEventListener('touchend',function(e){var t=Date.now();if(t-last<320&&!(e.target.closest&&e.target.closest('input,button,a')))e.preventDefault();last=t;},{passive:false});})();
 </script>
 <script src="three.min.js"></script>
-<script src="lib/GLTFLoader.js"></script>
 <script>
 (function(){
 'use strict';
@@ -371,26 +369,6 @@ var CAR=(function(){
   [[-0.83,1.27],[0.83,1.27],[-0.83,-1.25],[0.83,-1.25]].forEach(function(p){var piv=new THREE.Group(),spin=new THREE.Group();piv.position.set(p[0],0.37,p[1]);piv.add(spin);g.add(piv);var t=new THREE.Mesh(tyre,TYRE);t.rotation.z=Math.PI/2;t.castShadow=true;spin.add(t);var rr=new THREE.Mesh(rim,RIM);rr.rotation.z=Math.PI/2;spin.add(rr);var hb=new THREE.Mesh(hub,CHR);hb.rotation.z=Math.PI/2;spin.add(hb);
     for(var k=0;k<5;k++){var sm=new THREE.Mesh(spoke,DARK);sm.rotation.x=k*Math.PI/5;spin.add(sm);}spins.push(spin);if(p[1]>0)front.push(piv);});
   var a=1.84,o={mesh:g,front:front,spins:spins,L:L,a:a,speed:0,y:0,x:4,z:30};o.home=[o.x,o.z,o.a];g.position.set(o.x,0,o.z);g.rotation.y=a;return o;})();
-
-// ---------- real car model: replaces the hand-built car once it has downloaded ----------
-(function(){if(!THREE.GLTFLoader)return;new THREE.GLTFLoader().load('models/CarConcept.glb',function(gl){try{
-  var m=gl.scene,wrap=new THREE.Group(),g=CAR.mesh,old=g.children.slice();wrap.add(m);m.updateMatrixWorld(true);
-  function wheel(n){var o=m.getObjectByName(n);return o?new THREE.Box3().setFromObject(o):null;}
-  var fl=wheel('WheelFrontL'),rl=wheel('WheelRearL'),c=new THREE.Vector3(),c2=new THREE.Vector3();
-  // turn the model so its front points along +z, like the old car
-  if(fl&&rl){fl.getCenter(c);rl.getCenter(c2);m.rotation.y+=Math.atan2(c.x-c2.x,c.z-c2.z)*-1;m.updateMatrixWorld(true);}
-  var bb=new THREE.Box3().setFromObject(m),sz=bb.getSize(new THREE.Vector3()),sc=4.45/Math.max(sz.x,sz.z);m.scale.multiplyScalar(sc);m.updateMatrixWorld(true);bb.setFromObject(m);bb.getCenter(c);m.position.x-=c.x;m.position.z-=c.z;m.position.y-=bb.min.y;m.updateMatrixWorld(true);bb.setFromObject(m);
-  var glass=new THREE.MeshStandardMaterial({color:0x0c1216,roughness:0.05,metalness:0.7,transparent:true,opacity:0.72,envMap:scene.environment,envMapIntensity:1.3});
-  m.traverse(function(o){if(o.isMesh){o.castShadow=true;o.frustumCulled=false;var mt=o.material;if(mt){if(mt.transmission>0||/glass/i.test(mt.name||'')){if(/light|signal/i.test(o.name)){mt.transmission=0;mt.transparent=true;mt.opacity=0.55;}else o.material=glass;}else mt.envMapIntensity=1.0;}}});
-  // wheels: a steering pivot and a spinning group around each wheel centre
-  var front=[],spins=[],rad=0.34;['WheelFrontL','WheelFrontR','WheelRearL','WheelRearR'].forEach(function(n,i){var o=m.getObjectByName(n);if(!o)return;var b=new THREE.Box3().setFromObject(o),p=b.getCenter(new THREE.Vector3()),piv=new THREE.Group(),spin=new THREE.Group();rad=(b.max.y-b.min.y)/2;piv.position.copy(p);piv.add(spin);wrap.add(piv);wrap.updateMatrixWorld(true);spin.attach(o);spins.push(spin);if(i<2)front.push(piv);});
-  // lights: the model's tail lamps glow for braking; small lamps at the corners blink for turning
-  var tl=m.getObjectByName('BodyTaillights');if(tl&&tl.material){tl.material=tl.material.clone();tl.material.emissive=new THREE.Color(0xff0000);tl.material.emissiveIntensity=0.25;CAR.L.br=tl.material;}
-  var hw=(bb.max.x-bb.min.x)/2,lampG=new THREE.SphereGeometry(0.06,10,8),rc=new THREE.Raycaster();wrap.updateMatrixWorld(true);
-  [[1,bb.max.z-0.55,'il'],[-1,bb.max.z-0.55,'ir'],[1,bb.min.z+0.35,'il'],[-1,bb.min.z+0.35,'ir']].forEach(function(q){var y=0.66,x=q[0]*(hw-0.2);rc.set(new THREE.Vector3(q[0]*4,y,q[1]),new THREE.Vector3(-q[0],0,0));var h=rc.intersectObject(m,true);if(h.length)x=h[0].point.x;var l=new THREE.Mesh(lampG,CAR.L[q[2]]);l.scale.set(0.5,0.8,1.8);l.position.set(x,y,q[1]);wrap.add(l);});
-  [-0.3,0.3].forEach(function(x){var z=bb.min.z+0.02,y=0.5;rc.set(new THREE.Vector3(x,y,bb.min.z-3),new THREE.Vector3(0,0,1));var h=rc.intersectObject(m,true);if(h.length)z=h[0].point.z;var l=new THREE.Mesh(lampG,CAR.L.rv);l.scale.set(1.3,0.5,0.4);l.position.set(x,y,z);wrap.add(l);});
-  old.forEach(function(o){o.visible=false;});g.add(wrap);if(front.length===2&&spins.length===4){CAR.front=front;CAR.spins=spins;CAR.wheelR=rad;}CAR.model=true;
-  }catch(e){console.error(e);}},undefined,function(){});})();
 // the driver: white shirt and a checked lungi
 var MAN=(function(){var g=new THREE.Group();g.visible=false;g.scale.set(0.94,0.94,0.94);scene.add(g);
   var skin=std(null,{color:0x8a5a3c,rough:0.75}),shirt=std(null,{color:0xf3f3ef,rough:0.9}),hair=std(null,{color:0x17120f,rough:0.9}),sand=std(null,{color:0x3a2a20,rough:0.9});
@@ -443,7 +421,7 @@ function carStep(dt,steer,go,back,brake){var on=true,vmax=22,s=CAR.speed;
   CAR.a-=steer*Math.max(-1,Math.min(1,s/6))*1.9*(1-Math.min(Math.abs(s)/40,0.55))*dt;var ox=CAR.x,oz=CAR.z;CAR.x+=Math.sin(CAR.a)*s*dt;CAR.z+=Math.cos(CAR.a)*s*dt;if(collide(CAR,1.5,true))s*=0.35;
   if(Math.hypot(CAR.x,CAR.z)>3000){CAR.x=CAR.home[0];CAR.z=CAR.home[1];CAR.a=CAR.home[2];s=0;camInit=false;}
   CAR.speed=s;var gy=ground(CAR.x,CAR.z),sa=Math.sin(CAR.a),ca=Math.cos(CAR.a),pt=Math.atan2(ground(CAR.x+sa*1.6,CAR.z+ca*1.6)-ground(CAR.x-sa*1.6,CAR.z-ca*1.6),3.2);CAR.y=gy;CAR.mesh.position.set(CAR.x,gy,CAR.z);CAR.mesh.rotation.set(-pt,CAR.a,0,'YXZ');
-  CAR.front[0].rotation.y=CAR.front[1].rotation.y=-steer*0.42;for(var i=0;i<4;i++)CAR.spins[i].rotation.x+=s*dt/(CAR.wheelR||0.37);lights(steer,brake||(back&&s>0.5),s<-0.3);}
+  CAR.front[0].rotation.y=CAR.front[1].rotation.y=-steer*0.42;for(var i=0;i<4;i++)CAR.spins[i].rotation.x+=s*dt/0.37;lights(steer,brake||(back&&s>0.5),s<-0.3);}
 function footStep(dt,steer,go,back){var push=Math.min(1,Math.max(0,(Math.abs(sy)-0.35)/0.55)),v=go?1.5+2.1*(keys.ArrowUp||keys.KeyW?0.6:push):back?-1.1:0;MAN.a-=steer*2.5*dt;MAN.x+=Math.sin(MAN.a)*v*dt;MAN.z+=Math.cos(MAN.a)*v*dt;collide(MAN,0.35,false);
   var dx=MAN.x-CAR.x,dz=MAN.z-CAR.z,dd=Math.hypot(dx,dz);if(dd<1.45&&dd>1e-3){MAN.x+=dx/dd*(1.45-dd);MAN.z+=dz/dd*(1.45-dd);}
   var gy=ground(MAN.x,MAN.z),amp=Math.min(1,Math.abs(v)/1.5);MAN.ph+=Math.abs(v)*dt*3.6;var sw=Math.sin(MAN.ph)*amp;MAN.arms[0].rotation.x=sw*0.55;MAN.arms[1].rotation.x=-sw*0.55;MAN.legs[0].rotation.x=-sw*0.5;MAN.legs[1].rotation.x=sw*0.5;
