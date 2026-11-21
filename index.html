@@ -46,6 +46,8 @@
   #align button{border:0;border-radius:10px;padding:11px 0;font-size:17px;font-weight:700;color:#fff;background:rgba(255,255,255,.2)}
   #align #aDone{grid-column:span 4;background:#1f6f54;font-size:14px}#align #aZero{grid-column:span 2;font-size:13px}
   #aVal{font-size:12px;margin-top:7px;font-variant-numeric:tabular-nums}
+  #zm{display:none;position:fixed;top:92px;right:12px;z-index:6;flex-direction:column;gap:8px}body.drive #zm{display:flex}
+  #zm button{width:44px;height:44px;border:0;border-radius:50%;font-size:24px;font-weight:700;color:#fff;background:rgba(20,28,34,.6);touch-action:manipulation}
 </style>
 </head>
 <body>
@@ -72,6 +74,7 @@
   <p id="tokErr"></p>
   <button id="tokGo">Start</button>
 </div></div>
+<div id="zm"><button data-z="1" aria-label="Zoom in">+</button><button data-z="-1" aria-label="Zoom out">&minus;</button></div>
 <button id="exit">Exit drive</button>
 <div id="spd">0<small>km/h</small></div>
 <div id="keys">Arrows or WASD: move &nbsp;·&nbsp; Space: brake &nbsp;·&nbsp; F: get in or out</div>
@@ -424,15 +427,17 @@ function footStep(dt,steer,go,back){var push=Math.min(1,Math.max(0,(Math.abs(sy)
   var gy=ground(MAN.x,MAN.z),amp=Math.min(1,Math.abs(v)/1.5);MAN.ph+=Math.abs(v)*dt*3.6;var sw=Math.sin(MAN.ph)*amp;MAN.arms[0].rotation.x=sw*0.55;MAN.arms[1].rotation.x=-sw*0.55;MAN.legs[0].rotation.x=-sw*0.5;MAN.legs[1].rotation.x=sw*0.5;
   MAN.g.position.set(MAN.x,gy+Math.abs(Math.cos(MAN.ph))*0.025*amp,MAN.z);MAN.g.rotation.y=MAN.a;MAN.v=v;return gy;}
 function driveStep(dt){blink+=dt;var steer=Math.max(-1,Math.min(1,sx+(keys.ArrowRight||keys.KeyD?1:0)-(keys.ArrowLeft||keys.KeyA?1:0))),go=keys.ArrowUp||keys.KeyW||sy<-0.35?1:0,back=keys.ArrowDown||keys.KeyS||sy>0.35?1:0,brake=inp.brake||keys.Space?1:0;
-  if(mode==='car'){carStep(dt,steer,go,back,brake);follow(CAR.x,CAR.z,CAR.a,CAR.y,9.5,4.0,1.4,dt);if(++frame%6===0)spdEl.firstChild.nodeValue=String(Math.round(Math.abs(CAR.speed)*3.6));}
-  else{var gy=footStep(dt,steer,go,back);lights(0,false,false);follow(MAN.x,MAN.z,MAN.a,gy,4.4,2.3,1.45,dt);if(++frame%6===0)spdEl.firstChild.nodeValue=String(Math.round(Math.abs(MAN.v||0)*3.6));}
+  if(mode==='car'){carStep(dt,steer,go,back,brake);follow(CAR.x,CAR.z,CAR.a,CAR.y,9.5*DZ,4.0*Math.pow(DZ,1.25),1.4,dt);if(++frame%6===0)spdEl.firstChild.nodeValue=String(Math.round(Math.abs(CAR.speed)*3.6));}
+  else{var gy=footStep(dt,steer,go,back);lights(0,false,false);follow(MAN.x,MAN.z,MAN.a,gy,4.4*DZ,2.3*Math.pow(DZ,1.25),1.45,dt);if(++frame%6===0)spdEl.firstChild.nodeValue=String(Math.round(Math.abs(MAN.v||0)*3.6));}
   if(toastT>0){toastT-=dt;if(toastT<=0)document.getElementById('toast').style.opacity=0;}}
-var ptr=new Map(),pd=0;
+var ptr=new Map(),pd=0,DZ=1.7;try{var _z=parseFloat(localStorage.getItem('handelu_dz'));if(_z>=0.6&&_z<=5)DZ=_z;}catch(e){}
+function setDZ(v){DZ=Math.min(5,Math.max(0.6,v));try{localStorage.setItem('handelu_dz',String(DZ));}catch(e){}}
+[].forEach.call(document.querySelectorAll('#zm button'),function(b){b.addEventListener('click',function(){setDZ(DZ*(b.getAttribute('data-z')==='1'?0.8:1.25));});});
 canvas.addEventListener('pointerdown',function(e){ptr.set(e.pointerId,[e.clientX,e.clientY]);try{canvas.setPointerCapture(e.pointerId);}catch(_){}auto=false;pd=0;});
 canvas.addEventListener('pointermove',function(e){var p=ptr.get(e.pointerId);if(!p)return;var dx=e.clientX-p[0],dy=e.clientY-p[1];
-  if(ptr.size===1){goal.th-=dx*0.006;goal.ph=Math.min(1.55,Math.max(0.12,goal.ph-dy*0.005));}
+  var drv=document.body.classList.contains('drive');if(ptr.size===1&&!drv){goal.th-=dx*0.006;goal.ph=Math.min(1.55,Math.max(0.12,goal.ph-dy*0.005));}
   ptr.set(e.pointerId,[e.clientX,e.clientY]);
-  if(ptr.size===2){var a=[];ptr.forEach(function(v){a.push(v);});var d=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);if(pd>0)goal.r=Math.min(1500,Math.max(5,goal.r*pd/d));pd=d;}});
+  if(ptr.size===2){var a=[];ptr.forEach(function(v){a.push(v);});var d=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);if(pd>0){if(drv)setDZ(DZ*pd/d);else goal.r=Math.min(1500,Math.max(5,goal.r*pd/d));}pd=d;}});
 function up(e){ptr.delete(e.pointerId);pd=0;}canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
 canvas.addEventListener('wheel',function(e){e.preventDefault();auto=false;goal.r=Math.min(1500,Math.max(5,goal.r*Math.exp(e.deltaY*0.001)));},{passive:false});
 function resize(){var w=window.innerWidth,h=window.innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=w<h?62:45;camera.updateProjectionMatrix();}
