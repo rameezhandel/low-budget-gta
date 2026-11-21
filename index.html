@@ -443,20 +443,20 @@ var MAP=(function(){
   function frac(z){var n=Math.pow(2,z);return [(MASJID_LL[0]+180)/360*n,(1-Math.log(Math.tan(la)+1/Math.cos(la))/Math.PI)/2*n];}
   function mpt(z){return 40075016.686*Math.cos(la)/Math.pow(2,z);}
   function url(set,z,x,y,ext,tok){return 'https://api.mapbox.com/v4/'+set+'/'+z+'/'+x+'/'+y+ext+'?access_token='+encodeURIComponent(tok);}
-  function get(set,ext,tok,z,x,y,minz,cb){var im=new Image();im.crossOrigin='anonymous';im.onload=function(){cb(im,0,0,1);};
-    im.onerror=function(){if(z<=minz){cb(null);return;}get(set,ext,tok,z-1,x>>1,y>>1,minz,function(img,u,v,s){if(!img)cb(null);else cb(img,u+(x&1)*s/2,v+(y&1)*s/2,s/2);});};im.src=url(set,z,x,y,ext,tok);}
+  function get(mk,z,x,y,minz,cb){var im=new Image();im.crossOrigin='anonymous';im.onload=function(){cb(im,0,0,1);};
+    im.onerror=function(){if(z<=minz){cb(null);return;}get(mk,z-1,x>>1,y>>1,minz,function(img,u,v,s){if(!img)cb(null);else cb(img,u+(x&1)*s/2,v+(y&1)*s/2,s/2);});};im.src=mk(z,x,y);}
   function say(t){loadEl.style.display=t?'block':'none';loadEl.textContent=t||'';}
-  function loadDem(set,tok,done){var z=14,f=frac(z),x0=Math.floor(f[0])-1,y0=Math.floor(f[1])-1,W=768,d=new Float32Array(W*W),left=9,bad=0;
-    for(var j=0;j<3;j++)for(var i=0;i<3;i++)(function(i,j){get(set,'.pngraw',tok,z,x0+i,y0+j,z,function(img){
+  function loadDem(P,done){var z=14,f=frac(z),x0=Math.floor(f[0])-1,y0=Math.floor(f[1])-1,W=768,d=new Float32Array(W*W),left=9,bad=0;
+    for(var j=0;j<3;j++)for(var i=0;i<3;i++)(function(i,j){get(P.mk,z,x0+i,y0+j,z,function(img){
       if(!img)bad++;else{try{var c=document.createElement('canvas'),w=img.naturalWidth,h=img.naturalHeight;c.width=w;c.height=h;var x=c.getContext('2d');x.drawImage(img,0,0);var p=x.getImageData(0,0,w,h).data;
-        for(var b=0;b<256;b++)for(var a=0;a<256;a++){var o=(((b+0.5)*h/256|0)*w+((a+0.5)*w/256|0))*4;d[(j*256+b)*W+i*256+a]=-10000+(p[o]*65536+p[o+1]*256+p[o+2])*0.1;}}catch(e){bad++;}}
+        for(var b=0;b<256;b++)for(var a=0;a<256;a++){var o=(((b+0.5)*h/256|0)*w+((a+0.5)*w/256|0))*4;d[(j*256+b)*W+i*256+a]=P.dec(p[o],p[o+1],p[o+2]);}}catch(e){bad++;}}
       if(--left===0){if(bad){done(null);return;}
         // light smoothing takes out the 0.1 m steps of the encoding
         var t=new Float32Array(W*W);for(var k=0;k<2;k++){for(var y=0;y<W;y++)for(var q=0;q<W;q++){var s=0,n=0;for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){var xx=q+dx,yy=y+dy;if(xx>=0&&yy>=0&&xx<W&&yy<W){s+=d[yy*W+xx];n++;}}t[y*W+q]=s/n;}d.set(t);}
         done({d:d,w:W,s:mpt(z)/256,fx:(f[0]-x0)*256-0.5,fy:(f[1]-y0)*256-0.5});}});})(i,j);}
-  function loadLayer(Ly,tok,prog,done){var f=frac(Ly.z),x0=Math.round(f[0]-Ly.n/2),y0=Math.round(f[1]-Ly.n/2),S=mpt(Ly.z),px=512,c=document.createElement('canvas');c.width=c.height=Ly.n*px;var x=c.getContext('2d'),left=Ly.n*Ly.n,miss=0;x.fillStyle='#5f6f4a';x.fillRect(0,0,c.width,c.height);
+  function loadLayer(Ly,mk,prog,done){var f=frac(Ly.z),x0=Math.round(f[0]-Ly.n/2),y0=Math.round(f[1]-Ly.n/2),S=mpt(Ly.z),px=512,c=document.createElement('canvas');c.width=c.height=Ly.n*px;var x=c.getContext('2d'),left=Ly.n*Ly.n,miss=0;x.fillStyle='#5f6f4a';x.fillRect(0,0,c.width,c.height);
     Ly.e0=(x0-f[0])*S;Ly.e1=(x0+Ly.n-f[0])*S;Ly.n1=-(y0-f[1])*S;Ly.n0=-(y0+Ly.n-f[1])*S;
-    for(var j=0;j<Ly.n;j++)for(var i=0;i<Ly.n;i++)(function(i,j){get('mapbox.satellite','@2x.jpg90',tok,Ly.z,x0+i,y0+j,Ly.minz,function(img,u,v,s){if(img){var w=img.naturalWidth,h=img.naturalHeight;x.drawImage(img,u*w,v*h,s*w,s*h,i*px,j*px,px,px);if(s<1)miss++;}else miss+=100;prog();if(--left===0)done(c,miss);});})(i,j);}
+    for(var j=0;j<Ly.n;j++)for(var i=0;i<Ly.n;i++)(function(i,j){get(mk,Ly.z,x0+i,y0+j,Ly.minz,function(img,u,v,s){if(img){var w=img.naturalWidth,h=img.naturalHeight;x.drawImage(img,u*w,v*h,s*w,s*h,i*px,j*px,px,px);if(s<1)miss++;}else miss+=100;prog();if(--left===0)done(c,miss);});})(i,j);}
   function setHeights(){var c=Math.cos(TG.rotation.y),s=Math.sin(TG.rotation.y),tx=TG.position.x,tz=TG.position.z;LAYERS.forEach(function(Ly,k){if(!Ly.mesh)return;var P=Ly.mesh.geometry.attributes.position,F=k>0?LAYERS[k-1]:null,m=F?(Ly.e1-Ly.e0)/Ly.seg*1.3:0;
       for(var i=0;i<P.count;i++){var X=P.getX(i),Z=P.getZ(i),y=ground(X*c+Z*s+tx,-X*s+Z*c+tz)+Ly.lift;if(F&&X>F.e0+m&&X<F.e1-m&&-Z>F.n0+m&&-Z<F.n1-m)y-=k===1?3:14;P.setY(i,y);}P.needsUpdate=true;Ly.mesh.geometry.computeVertexNormals();Ly.mesh.geometry.computeBoundingSphere();});}
   function build(Ly,canvas){var w=Ly.e1-Ly.e0,g=new THREE.PlaneGeometry(w,w,Ly.seg,Ly.seg);g.rotateX(-Math.PI/2);g.translate((Ly.e0+Ly.e1)/2,0,-(Ly.n0+Ly.n1)/2);
@@ -464,17 +464,18 @@ var MAP=(function(){
     var m=new THREE.MeshStandardMaterial({map:t,roughness:1,metalness:0});m.envMapIntensity=0.35;if(Ly.po){m.polygonOffset=true;m.polygonOffsetFactor=Ly.po;m.polygonOffsetUnits=Ly.po;}
     Ly.mesh=new THREE.Mesh(g,m);Ly.mesh.receiveShadow=true;TG.add(Ly.mesh);}
   function fail(t){state='idle';say('');askToken(t);}
-  function start(tok){if(state==='loading')return;state='loading';say('Checking the Mapbox token...');
-    var sets=['mapbox.terrain-rgb','mapbox.mapbox-terrain-dem-v1'],f=frac(14);
-    function check(k){fetch(url(sets[k],14,Math.floor(f[0]),Math.floor(f[1]),'.pngraw',tok)).then(function(r){
-        if(r.status===401||r.status===403){fail('Mapbox did not accept this token ('+r.status+'). Copy the Default public token again; it starts with pk.');return;}
-        if(!r.ok){if(k+1<sets.length)check(k+1);else fail('Mapbox answered with error '+r.status+' for the terrain. Tell Claude this number.');return;}
-        go(sets[k]);},function(){go(sets[0]);});}
-    function go(set){say('Loading terrain...');loadDem(set,tok,function(D){if(!D){fail('Mapbox is blocked here. This file cannot run inside the Claude app or its preview. Download it and open it in Chrome on a computer. If you are already doing that, check the internet connection.');return;}
-        DEM=D;H0=demAt(0,0);var total=0,got=0,k=0,missAll=0;LAYERS.forEach(function(Ly){total+=Ly.n*Ly.n;});
-        (function next(){if(k>=LAYERS.length){gr.visible=false;setHeights();placeAll();state='ready';MAP.miss=missAll;say(missAll>=100?'Some satellite tiles did not load':'');if(missAll>=100)setTimeout(function(){say('');},4000);return;}
-          var Ly=LAYERS[k++];loadLayer(Ly,tok,function(){got++;say('Loading satellite picture '+Math.round(got/total*100)+'%');},function(c,miss){missAll+=miss;build(Ly,c);setHeights();placeAll();next();});})();});}
-    check(0);}
+  function start(tok){if(state==='loading')return;state='loading';say('Finding terrain heights...');var f=frac(14),tx=Math.floor(f[0]),ty=Math.floor(f[1]),note=[];
+    var mbDec=function(r,g,b){return -10000+(r*65536+g*256+b)*0.1;};
+    var DEMS=[{n:'Mapbox',mk:function(z,x,y){return url('mapbox.terrain-rgb',z,x,y,'.pngraw',tok);},dec:mbDec},{n:'Mapbox',mk:function(z,x,y){return url('mapbox.mapbox-terrain-dem-v1',z,x,y,'.pngraw',tok);},dec:mbDec},
+      {n:'Mapzen terrain tiles',mk:function(z,x,y){return 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/'+z+'/'+x+'/'+y+'.png';},dec:function(r,g,b){return r*256+g+b/256-32768;}}];
+    var SATS=[{n:'Mapbox',mk:function(z,x,y){return url('mapbox.satellite',z,x,y,'@2x.jpg90',tok);}},{n:'Esri World Imagery',mk:function(z,x,y){return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+z+'/'+y+'/'+x;}}];
+    function probe(list,z,x,y,k,ok,none){if(k>=list.length){none();return;}fetch(list[k].mk(z,x,y)).then(function(r){note.push(list[k].n+' '+r.status);if(r.ok)ok(list[k]);else probe(list,z,x,y,k+1,ok,none);},function(){note.push(list[k].n+' unreachable');probe(list,z,x,y,k+1,ok,none);});}
+    probe(DEMS,14,tx,ty,0,function(P){say('Loading terrain...');loadDem(P,function(Dm){if(!Dm){fail('The terrain could not be read ('+note.join(', ')+'). Tell Claude this line.');return;}DEM=Dm;H0=demAt(0,0);sat(P);});},function(){fail('No terrain source answered ('+note.join(', ')+'). Tell Claude this line.');});
+    function sat(demP){var f18=frac(18);probe(SATS,18,Math.floor(f18[0]),Math.floor(f18[1]),0,function(S){var total=0,got=0,k=0,missAll=0;LAYERS.forEach(function(Ly){total+=Ly.n*Ly.n;});
+        var at=document.getElementById('attr');if(S.n!=='Mapbox')at.innerHTML='Imagery &copy; Esri, Maxar, Earthstar Geographics';if(demP.n!=='Mapbox')at.innerHTML+=' &middot; Terrain: Mapzen, AWS';
+        (function next(){if(k>=LAYERS.length){gr.visible=false;setHeights();placeAll();state='ready';MAP.miss=missAll;MAP.src=demP.n+' / '+S.n;say('Ground: '+S.n+', heights: '+demP.n);setTimeout(function(){say('');},6000);return;}
+          var Ly=LAYERS[k++];loadLayer(Ly,S.mk,function(){got++;say('Loading satellite picture '+Math.round(got/total*100)+'%');},function(c,miss){missAll+=miss;build(Ly,c);setHeights();placeAll();next();});})();},
+      function(){fail('No satellite picture source answered ('+note.join(', ')+'). Tell Claude this line.');});}}
   return {start:start,setHeights:setHeights,layers:LAYERS,state:function(){return state;},miss:0};})();
 function placeAll(){CAR.y=ground(CAR.x,CAR.z);CAR.mesh.position.set(CAR.x,CAR.y,CAR.z);MAN.g.position.y=ground(MAN.x,MAN.z);camInit=false;}
 function askToken(err){var t=document.getElementById('tok');t.style.display='flex';document.getElementById('tokErr').textContent=err||'';var saved='';try{saved=localStorage.getItem('handelu_mapbox_token')||'';}catch(e){}document.getElementById('tokIn').value=saved;}
